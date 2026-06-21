@@ -137,7 +137,7 @@ enable_systemd_services() {
                 | grep -m1 '^ExecStart=' \
                 | sed 's/^ExecStart=//;s/^[-@+!]*//' \
                 | awk '{print $1}')
-            if [ -n "$service_bin" ] && [ ! -x "$service_bin" ]; then
+            if [ -n "$service_bin" ] && ! command -v "$service_bin" &>/dev/null; then
                 log_warn "Binário '$service_bin' do serviço '$service' não encontrado. Pulando habilitação."
                 continue
             fi
@@ -376,6 +376,169 @@ verify_display_manager() {
         return 0
     else
         echo -e "${GREEN}  ✓ $dm_name verificado e pronto para uso!${NC}"
+        echo -e "${BLUE}───────────────────────────────────────────────────${NC}"
+        return 0
+    fi
+}
+
+# ─────────────────────────────────────────────────────────────
+# Verificação completa do ambiente Niri + DMS antes de reiniciar
+# Detecta problemas que impediriam o compositor ou o shell de
+# funcionar corretamente após o reboot
+# ─────────────────────────────────────────────────────────────
+verify_niri_environment() {
+    local repo_dir="$1"
+    local user_home
+    user_home=$(get_user_home)
+    local niri_cfg_dir="$user_home/.config/niri"
+
+    echo ""
+    echo -e "${BLUE}╔══════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║     Verificação do Ambiente Niri + DMS           ║${NC}"
+    echo -e "${BLUE}╚══════════════════════════════════════════════════╝${NC}"
+    echo ""
+
+    local errors=0
+    local warnings=0
+
+    # ── 1. Binário do Niri ────────────────────────────────────
+    log_info "1/7 — Verificando binário niri..."
+    if command -v niri &>/dev/null; then
+        log_success "niri encontrado: $(command -v niri)"
+    else
+        log_error "Binário 'niri' NÃO encontrado no PATH!"
+        log_info "  → Instale com: sudo pacman -S niri  (Arch) | sudo dnf install niri  (Fedora)"
+        errors=$((errors + 1))
+    fi
+
+    # ── 2. Binário do DMS ─────────────────────────────────────
+    log_info "2/7 — Verificando binário dms..."
+    if command -v dms &>/dev/null; then
+        log_success "dms encontrado: $(command -v dms)"
+    else
+        log_error "Binário 'dms' NÃO encontrado!"
+        log_info "  → O DankMaterialShell não foi instalado corretamente."
+        errors=$((errors + 1))
+    fi
+
+    # ── 3. Arquivos de configuração do Niri ───────────────────
+    log_info "3/7 — Verificando configuração do Niri em $niri_cfg_dir..."
+    local niri_config="$niri_cfg_dir/config.kdl"
+
+    if [ -f "$niri_config" ] || [ -L "$niri_config" ]; then
+        log_success "config.kdl encontrado."
+
+        # ── 3a. Verificar includes KDL sem caminhos hardcoded ──
+        log_info "      Verificando includes hardcoded no config.kdl..."
+        local hardcoded_includes
+        hardcoded_includes=$(grep -rn '/home/' "$niri_cfg_dir" 2>/dev/null || true)
+        if [ -n "$hardcoded_includes" ]; then
+            log_error "Encontrados caminhos hardcoded nos configs do Niri:"
+            while IFS= read -r line; do
+                log_warn "  → $line"
+            done <<< "$hardcoded_includes"
+            log_info "  Corrija usando include relativo, ex: include \"./keybinds-dms.kdl\""
+            errors=$((errors + 1))
+        else
+            log_success "Nenhum caminho hardcoded encontrado nos includes."
+        fi
+
+        # ── 3b. Validar sintaxe via 'niri validate' ───────────
+        if command -v niri &>/dev/null; then
+            log_info "      Validando sintaxe do config.kdl com 'niri validate'..."
+            local validate_out
+            validate_out=$(niri validate --config "$niri_config" 2>&1) || true
+            if echo "$validate_out" | grep -qi "error\|erro\|invalid\|inválid"; then
+                log_error "Erros de sintaxe detectados no config.kdl:"
+                while IFS= read -r vline; do
+                    log_warn "  → $vline"
+                done <<< "$validate_out"
+                errors=$((errors + 1))
+            else
+                log_success "Sintaxe do config.kdl válida."
+            fi
+        fi
+    else
+        log_error "config.kdl NÃO encontrado em $niri_cfg_dir!"
+        log_info "  → Os dotfiles podem não ter sido implantados corretamente."
+        errors=$((errors + 1))
+    fi
+
+    # ── 4. Arquivos KDL de keybinds e autostart ───────────────
+    log_info "4/7 — Verificando arquivos essenciais de configuração..."
+    local required_kdl=(
+        "$niri_cfg_dir/cfg/keybinds.kdl"
+        "$niri_cfg_dir/cfg/keybinds-dms.kdl"
+        "$niri_cfg_dir/cfg/autostart.kdl"
+        "$niri_cfg_dir/cfg/autostart-dms.kdl"
+    )
+    for kdl_file in "${required_kdl[@]}"; do
+        if [ -f "$kdl_file" ] || [ -L "$kdl_file" ]; then
+            log_success "  ✓ $(basename "$kdl_file")"
+        else
+            log_error "  ✗ Arquivo ausente: $kdl_file"
+            errors=$((errors + 1))
+        fi
+    done
+
+    # ── 5. DMS autostart habilitado? ──────────────────────────
+    log_info "5/7 — Verificando se DMS é iniciado com o Niri..."
+    local autostart_dms="$niri_cfg_dir/cfg/autostart-dms.kdl"
+    if [ -f "$autostart_dms" ] || [ -L "$autostart_dms" ]; then
+        # Seguir link simbólico para ler o arquivo real
+        local real_autostart
+        real_autostart=$(readlink -f "$autostart_dms" 2>/dev/null || echo "$autostart_dms")
+        if grep -q '^spawn-at-startup[[:space:]]*"dms"' "$real_autostart" 2>/dev/null; then
+            log_success "spawn-at-startup do DMS está ativo."
+        else
+            log_warn "spawn-at-startup do DMS está comentado ou ausente em autostart-dms.kdl!"
+            log_info "  → O DMS não iniciará automaticamente com o Niri."
+            warnings=$((warnings + 1))
+        fi
+    fi
+
+    # ── 6. Binários opcionais recomendados ────────────────────
+    log_info "6/7 — Verificando binários recomendados..."
+    local optional_bins=(ghostty playerctl zen-browser fuzzel)
+    local missing_optional=()
+    for bin in "${optional_bins[@]}"; do
+        if command -v "$bin" &>/dev/null; then
+            log_success "  ✓ $bin"
+        else
+            missing_optional+=("$bin")
+            log_warn "  ⚠ $bin não encontrado (alguns atalhos podem não funcionar)"
+        fi
+    done
+    if [ ${#missing_optional[@]} -gt 0 ]; then
+        warnings=$((warnings + 1))
+    fi
+
+    # ── 7. Variáveis de ambiente Wayland ──────────────────────
+    log_info "7/7 — Verificando configuração do ambiente Wayland..."
+    if [ -d "$user_home/.config/environment.d" ] || [ -L "$user_home/.config/environment.d" ]; then
+        log_success "Diretório environment.d presente."
+    else
+        log_warn "Diretório environment.d não encontrado em ~/.config/"
+        log_info "  → Variáveis de ambiente Wayland podem não estar definidas."
+        warnings=$((warnings + 1))
+    fi
+
+    # ── Resultado final ───────────────────────────────────────
+    echo ""
+    echo -e "${BLUE}───────────────────────────────────────────────────${NC}"
+    if [ "$errors" -gt 0 ]; then
+        echo -e "${RED}  ✗ Verificação do Niri FALHOU: $errors erro(s), $warnings aviso(s)${NC}"
+        log_error "O ambiente Niri+DMS pode NÃO funcionar após a reinicialização."
+        log_info  "Corrija os erros acima antes de reiniciar o sistema."
+        echo -e "${BLUE}───────────────────────────────────────────────────${NC}"
+        return 1
+    elif [ "$warnings" -gt 0 ]; then
+        echo -e "${YELLOW}  ⚠ Verificação do Niri OK com $warnings aviso(s)${NC}"
+        log_info "O Niri+DMS deve funcionar, mas revise os avisos acima."
+        echo -e "${BLUE}───────────────────────────────────────────────────${NC}"
+        return 0
+    else
+        echo -e "${GREEN}  ✓ Ambiente Niri+DMS verificado e pronto!${NC}"
         echo -e "${BLUE}───────────────────────────────────────────────────${NC}"
         return 0
     fi

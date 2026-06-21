@@ -1,1 +1,1 @@
-/home/wanderson/.config/niri/cfg/autostart-dms.kdl
+include "./autostart-dms.kdl"

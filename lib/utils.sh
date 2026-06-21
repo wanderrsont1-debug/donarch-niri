@@ -76,7 +76,7 @@ backup_existing_configs() {
 
     if [ -d "$config_dir" ]; then
         log_info "Criando backup completo de ~/.config em: $backup_dir"
-        cp -r "$config_dir" "$backup_dir"
+        cp -a "$config_dir" "$backup_dir"
         log_success "Backup criado em: $backup_dir"
         return 0
     else

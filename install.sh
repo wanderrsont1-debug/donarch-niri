@@ -122,11 +122,15 @@ main() {
         verify_display_manager "$dm_choice" "$REPO_DIR" || dm_verified=false
     fi
 
+    # 9. Verificar se o ambiente Niri + DMS está correto antes de reiniciar
+    local niri_verified=true
+    verify_niri_environment "$REPO_DIR" || niri_verified=false
+
     # ─────────────────────────────────────────────────────────
     # Conclusão
     # ─────────────────────────────────────────────────────────
     echo ""
-    if $dm_verified; then
+    if $dm_verified && $niri_verified; then
         echo -e "${BLUE}╔══════════════════════════════════════════════════╗${NC}"
         echo -e "${GREEN}║           Instalação Concluída com Sucesso!      ║${NC}"
         echo -e "${BLUE}╠══════════════════════════════════════════════════╣${NC}"
@@ -136,22 +140,31 @@ main() {
         echo -e "${CYAN}║  3. O ambiente DMS iniciará automaticamente      ║${NC}"
         echo -e "${BLUE}╠══════════════════════════════════════════════════╣${NC}"
         echo -e "${YELLOW}║  Teclas principais do Niri:                      ║${NC}"
-        echo -e "${YELLOW}║  Super+T   → Terminal (Ghostty)                  ║${NC}"
-        echo -e "${YELLOW}║  Super+Q   → Fechar janela                       ║${NC}"
-        echo -e "${YELLOW}║  Super+F   → Gerenciador de arquivos             ║${NC}"
+        echo -e "${YELLOW}║  Super+Return → Terminal (Ghostty)               ║${NC}"
+        echo -e "${YELLOW}║  Super+Q      → Fechar janela                    ║${NC}"
+        echo -e "${YELLOW}║  Super+F      → Fullscreen                       ║${NC}"
+        echo -e "${YELLOW}║  Ctrl+Space   → Launcher (DMS Spotlight)         ║${NC}"
+        echo -e "${YELLOW}║  Super+Shift+Q → Menu de sessão (PowerMenu)      ║${NC}"
         echo -e "${BLUE}╚══════════════════════════════════════════════════╝${NC}"
     else
         echo -e "${BLUE}╔══════════════════════════════════════════════════╗${NC}"
         echo -e "${YELLOW}║     Instalação Concluída — COM AVISOS ⚠         ║${NC}"
         echo -e "${BLUE}╠══════════════════════════════════════════════════╣${NC}"
-        echo -e "${RED}║  A verificação do Display Manager encontrou     ║${NC}"
-        echo -e "${RED}║  problemas. Revise os erros acima antes de      ║${NC}"
-        echo -e "${RED}║  reiniciar para evitar ficar preso no TTY.      ║${NC}"
+        if ! $dm_verified; then
+            echo -e "${RED}║  A verificação do Display Manager encontrou     ║${NC}"
+            echo -e "${RED}║  problemas. Revise os erros acima antes de      ║${NC}"
+            echo -e "${RED}║  reiniciar para evitar ficar preso no TTY.      ║${NC}"
+        fi
+        if ! $niri_verified; then
+            echo -e "${RED}║  A verificação do Niri+DMS encontrou erros.     ║${NC}"
+            echo -e "${RED}║  Keybinds ou o shell podem não funcionar        ║${NC}"
+            echo -e "${RED}║  corretamente. Revise os erros acima.           ║${NC}"
+        fi
         echo -e "${BLUE}╚══════════════════════════════════════════════════╝${NC}"
     fi
     echo ""
 
-    if $dm_verified; then
+    if $dm_verified && $niri_verified; then
         log_warn "Recomenda-se reiniciar o computador para aplicar todas as configurações."
         echo ""
         if prompt_yes_no "Deseja reiniciar o sistema agora?" "N"; then
@@ -160,11 +173,17 @@ main() {
             sudo reboot
         fi
     else
-        log_error "NÃO é recomendado reiniciar com problemas no Display Manager."
-        log_info "Corrija os erros acima e depois execute:"
-        log_info "  sudo systemctl enable sddm.service"
-        log_info "  sudo systemctl set-default graphical.target"
-        log_info "  sudo reboot"
+        if ! $dm_verified; then
+            log_error "NÃO é recomendado reiniciar com problemas no Display Manager."
+            log_info "Corrija os erros e depois execute:"
+            log_info "  sudo systemctl enable sddm.service"
+            log_info "  sudo systemctl set-default graphical.target"
+        fi
+        if ! $niri_verified; then
+            log_error "NÃO é recomendado reiniciar com erros na configuração do Niri+DMS."
+            log_info "Corrija os erros nos dotfiles e reimplante com: bash install.sh"
+        fi
+        log_info "Após corrigir, execute: sudo reboot"
     fi
 }
 
