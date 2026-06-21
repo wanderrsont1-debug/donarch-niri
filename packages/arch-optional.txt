@@ -1,0 +1,11 @@
+# Aplicativos opcionais — o usuário escolhe quais instalar
+# Cada linha é apresentada como opção durante a instalação
+
+# === Navegadores Alternativos ===
+zen-browser-bin
+
+# === Editores de Código ===
+# zed
+
+# === Ferramentas Adicionais ===
+# helix

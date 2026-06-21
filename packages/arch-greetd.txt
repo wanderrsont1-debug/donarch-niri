@@ -1,0 +1,3 @@
+# Pacotes do greetd e tuigreet
+greetd
+greetd-tuigreet
