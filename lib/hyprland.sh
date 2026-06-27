@@ -8,8 +8,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/utils.sh"
 
-# URL do repositório dos dotfiles
-readonly HYPRLAND_DOTFILES_REPO="https://github.com/Jules3182/dotfiles.git"
+# Dotfiles incluídos neste repositório (pasta local)
+# Não depende de nenhum repositório externo
+readonly HYPRLAND_DOTFILES_SRC="$(cd "$SCRIPT_DIR/.." && pwd)/dotfiles-hyprland"
 readonly HYPRLAND_DOTFILES_DIR="$HOME/.dotfiles-hyprland"
 
 # Diretório de pacotes (relativo à raiz do repo)
@@ -249,31 +250,39 @@ ensure_stow() {
 }
 
 # ─────────────────────────────────────────────────────────────
-# DOTFILES — Clonar e aplicar com GNU Stow
+# DOTFILES — Copiar do repositório local e aplicar com GNU Stow
+# Os dotfiles estão incluídos em dotfiles-hyprland/ neste repo.
+# Não depende de nenhum repositório externo.
 # ─────────────────────────────────────────────────────────────
 deploy_hyprland_dotfiles() {
     ensure_stow || return 1
 
-    log_info "Clonando dotfiles Hyprland de $HYPRLAND_DOTFILES_REPO ..."
+    # Verificar se a pasta de dotfiles existe no repositório local
+    if [ ! -d "$HYPRLAND_DOTFILES_SRC" ]; then
+        log_error "Pasta de dotfiles não encontrada: $HYPRLAND_DOTFILES_SRC"
+        log_error "Certifique-se de ter clonado o repositório completo."
+        return 1
+    fi
+
+    log_info "Copiando dotfiles de $HYPRLAND_DOTFILES_SRC ..."
 
     if [ -d "$HYPRLAND_DOTFILES_DIR" ]; then
         log_warn "Diretório $HYPRLAND_DOTFILES_DIR já existe."
-        if prompt_yes_no "Deseja atualizar (git pull) os dotfiles existentes?" "S"; then
-            git -C "$HYPRLAND_DOTFILES_DIR" pull || {
-                log_error "Falha ao atualizar os dotfiles."
-                return 1
-            }
+        if prompt_yes_no "Deseja sobrescrever os dotfiles existentes?" "S"; then
+            rm -rf "$HYPRLAND_DOTFILES_DIR"
         else
-            log_info "Usando dotfiles existentes."
+            log_info "Mantendo dotfiles existentes — pulando cópia."
         fi
-    else
-        git clone "$HYPRLAND_DOTFILES_REPO" "$HYPRLAND_DOTFILES_DIR" || {
-            log_error "Falha ao clonar os dotfiles. Verifique sua conexão com a internet."
+    fi
+
+    if [ ! -d "$HYPRLAND_DOTFILES_DIR" ]; then
+        cp -r "$HYPRLAND_DOTFILES_SRC" "$HYPRLAND_DOTFILES_DIR" || {
+            log_error "Falha ao copiar os dotfiles."
             return 1
         }
     fi
 
-    log_success "Dotfiles clonados em: $HYPRLAND_DOTFILES_DIR"
+    log_success "Dotfiles copiados para: $HYPRLAND_DOTFILES_DIR"
 
     # Aplicar cada módulo de dotfiles com GNU Stow
     log_info "Aplicando dotfiles com GNU Stow..."
@@ -314,6 +323,8 @@ deploy_hyprland_dotfiles() {
     else
         log_success "Todos os dotfiles aplicados com sucesso!"
     fi
+
+    log_info "Para personalizar seus dotfiles, edite os arquivos em: $HYPRLAND_DOTFILES_DIR"
 }
 
 # ─────────────────────────────────────────────────────────────
@@ -353,7 +364,7 @@ hyprland_post_install_message() {
     echo -e "${GREEN}╔══════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║        ✅  Ambiente Hyprland instalado com sucesso!      ║${NC}"
     echo -e "${GREEN}╠══════════════════════════════════════════════════════════╣${NC}"
-    echo -e "${CYAN}║  Dotfiles aplicados de: Jules3182/dotfiles               ║${NC}"
+    echo -e "${CYAN}║  Dotfiles do seu repo: script-instalacao                 ║${NC}"
     echo -e "${CYAN}║  Localização local:  ~/.dotfiles-hyprland                ║${NC}"
     echo -e "${GREEN}╠══════════════════════════════════════════════════════════╣${NC}"
     echo -e "${YELLOW}║  Próximos passos:                                        ║${NC}"
@@ -361,8 +372,8 @@ hyprland_post_install_message() {
     echo -e "${YELLOW}║  2. Selecione 'Hyprland' na tela de login                ║${NC}"
     echo -e "${YELLOW}║  3. Atalho inicial: SUPER + Q → abre o Ghostty           ║${NC}"
     echo -e "${YELLOW}║  4. Atalho launcher: SUPER + SPACE → abre o Wofi         ║${NC}"
-    echo -e "${YELLOW}║  5. Para atualizar dotfiles: cd ~/.dotfiles-hyprland     ║${NC}"
-    echo -e "${YELLOW}║     e depois: git pull                                   ║${NC}"
+    echo -e "${YELLOW}║  5. Para personalizar: edite os arquivos em              ║${NC}"
+    echo -e "${YELLOW}║     ~/.dotfiles-hyprland e rode 'stow <módulo>'          ║${NC}"
     echo -e "${GREEN}╠══════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║  Backup de ~/.config salvo com timestamp em ~/            ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
