@@ -1,57 +1,177 @@
-# CachyOS / Arch Linux Niri Environment Autoinstall
+# Script de Instalação — Niri & Hyprland
 
-Este repositório contém um script de instalação automatizada e os dotfiles para recriar o ambiente atual de desktop baseado no compositor **Niri** e no **DankMaterialShell (dms-shell)**, incluindo todas as configurações de terminal, visualizador de áudio, fontes e temas de display manager.
+![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?style=for-the-badge&logo=arch-linux&logoColor=white)
+![Fedora](https://img.shields.io/badge/Fedora-51A2DA?style=for-the-badge&logo=fedora&logoColor=white)
+![Hyprland](https://img.shields.io/badge/Hyprland-58E1FF?style=for-the-badge&logo=hyprland&logoColor=000)
+![Bash](https://img.shields.io/badge/Bash-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white)
 
-## 📋 Estrutura do Repositório
+Script de instalação automatizada e interativa para recriar ambientes Wayland completos em Arch Linux / CachyOS / Fedora e derivados.
 
-*   `install.sh`: Script principal interativo para instalação e restauração completa.
-*   `packages.txt`: Backup contendo todos os pacotes explicitamente instalados no sistema de origem (gerado pelo backup local para fins de referência).
-*   `dotfiles/`: Arquivos de configuração do usuário:
-    *   `niri/`: Configurações do compositor Niri (Wayland).
-    *   `DankMaterialShell/`: Configuração da barra e componentes do shell desktop.
-    *   `alacritty/` & `ghostty/`: Configurações de cores e layout dos emuladores de terminal.
-    *   `fuzzel/`: Menu de aplicativos e launcher.
-    *   `cava/`: Visualizador de espectro de áudio.
-    *   `micro/`: Configurações do editor de texto de terminal.
-    *   `fish/`: Configurações do terminal fish.
-    *   `environment.d/`: Definições de variáveis de ambiente do usuário.
-    *   `.bashrc`, `.zshrc`, `.bash_profile`, `.Xresources`.
-*   `system/`: Configurações do display manager SDDM.
+---
 
-## 🚀 Como usar em uma instalação limpa (Arch Linux / CachyOS sem desktop)
+## 🖥️ Ambientes Suportados
 
-Em um sistema Arch recém-instalado (apenas a base com rede configurada):
+| Ambiente | Compositor | Dotfiles | Distros |
+|---|---|---|---|
+| **Niri** | Niri (Wayland) | DankMaterialShell (dms-shell) | Arch, CachyOS, Fedora |
+| **Hyprland** | Hyprland 0.55+ (Lua) | Jules3182/dotfiles (incluídos) | Arch, CachyOS, Fedora |
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone https://github.com/SEU-USUARIO/NOME-DO-REPO.git
-    cd NOME-DO-REPO
-    ```
+---
 
-2.  **Execute o script de instalação:**
-    ```bash
-    ./install.sh
-    ```
+## 🚀 Uso Rápido
 
-O script perguntará passo a passo o que você deseja fazer:
-*   Adicionar os repositórios oficiais e otimizados do CachyOS.
-*   Instalar um AUR Helper (paru-bin) caso não tenha.
-*   Instalar os pacotes essenciais e curados do ambiente (Niri, DMS, áudio, etc.).
-*   Copiar todos os arquivos de configuração (dotfiles) para o seu usuário.
-*   Instalar e configurar o tema de SDDM **SilentSDDM** (com o vídeo configurado).
-*   Habilitar os serviços essenciais (SDDM, NetworkManager, Bluetooth).
-
-## 🛠️ Como atualizar este repositório com suas novas configurações
-
-Caso você faça alterações no seu sistema e queira salvar as novas configurações neste repositório:
-
-Execute o script de backup local na pasta do projeto:
 ```bash
-bash backup_local.sh
+git clone https://github.com/wanderrsont1-debug/script-instalacao
+cd script-instalacao
+bash install.sh
 ```
-Depois disso, basta commitar e enviar as alterações para o seu GitHub/GitLab:
+
+Ao executar, um menu interativo pergunta qual ambiente instalar:
+
+```
+┌──────────────────────────────────────────────────┐
+│        Selecione o ambiente a instalar:          │
+├──────────────────────────────────────────────────┤
+│  1) Niri   — DankMaterialShell (dms-shell)       │
+│  2) Hyprland — dotfiles Lua 0.55+                │
+│  3) Ambos  — instalar Niri e Hyprland            │
+│  0) Sair                                         │
+└──────────────────────────────────────────────────┘
+```
+
+> ⚠️ **Não execute como root.** O script pede `sudo` internamente quando necessário.
+
+---
+
+## ✅ Testar Antes de Instalar (dry-run)
+
+Para validar o script sem instalar nada (recomendado antes de usar em um novo sistema):
+
 ```bash
-git add .
-git commit -m "update configs and package list"
-git push
+bash test_hyprland.sh
 ```
+
+O script de testes verifica **10 categorias** sem tocar no sistema:
+- Sintaxe de todos os `.sh`
+- Presença de todos os arquivos e módulos de dotfiles
+- Estrutura compatível com GNU Stow
+- Pacotes essenciais nas listas
+- Todas as funções definidas
+- Simulação de backup em `/tmp`
+- Simulação de GNU Stow em `/tmp`
+
+Resultado esperado: **0 FAIL → pronto para produção**.
+
+---
+
+## 📦 O que é instalado (Hyprland — Arch)
+
+| Categoria | Pacotes |
+|---|---|
+| Compositor | `hyprland`, `xdg-desktop-portal-hyprland` |
+| Barra | `waybar-git` (compilado via paru) |
+| Launcher | `wofi` |
+| Notificações | `swaync` |
+| Widgets | `eww` |
+| Terminal | `ghostty` |
+| Áudio | `pipewire`, `wireplumber`, `pavucontrol` |
+| Bluetooth | `bluez`, `bluez-utils` |
+| GPU AMD | `mesa`, `vulkan-radeon`, `libva-mesa-driver` |
+| Display Manager | `sddm` |
+| Dotfiles | GNU Stow (incluídos no repo) |
+
+> Para Fedora, os mesmos pacotes são instalados via `dnf` + COPR `solopasha/hyprland`.
+
+---
+
+## 🔗 Dotfiles Hyprland (incluídos no repositório)
+
+Os dotfiles estão em `dotfiles-hyprland/` — **sem dependência de repositório externo**.
+
+```
+dotfiles-hyprland/
+├── hyprland/      → ~/.config/hypr/        (config + scripts Lua)
+├── waybar/        → ~/.config/waybar/      (barra superior e inferior)
+├── wofi/          → ~/.config/wofi/        (launcher de aplicativos)
+├── swaync/        → ~/.config/swaync/      (central de notificações)
+├── eww/           → ~/.config/eww/         (widgets: calendário, power menu)
+├── ghostty/       → ~/.config/ghostty/     (terminal)
+├── btop/          → ~/.config/btop/        (monitor de sistema)
+├── fastfetch/     → ~/.config/fastfetch/   (system fetch)
+└── wallpapers/    → ~/.dotfiles-hyprland/wallpapers/
+```
+
+Aplicados com **GNU Stow** (symlinks) — edite os arquivos em `~/.dotfiles-hyprland/` e rode `stow <módulo>` para atualizar.
+
+---
+
+## 🔒 Segurança
+
+- Backup automático de `~/.config` com timestamp antes de qualquer alteração
+- Nunca executa como root
+- Falhas em pacotes AUR individuais não abortam a instalação
+- Conflitos de dotfiles tratados com `--restow`
+
+---
+
+## 📁 Estrutura do Repositório
+
+```
+script-instalacao/
+├── install.sh                  ← Instalador principal interativo
+├── test_hyprland.sh            ← Validação dry-run (sem instalar nada)
+├── backup_local.sh             ← Backup do sistema atual
+├── install_arch.sh             ← Wrapper Arch (legado)
+├── install_fedora.sh           ← Wrapper Fedora (legado)
+├── packages.txt                ← Lista de referência de pacotes
+│
+├── lib/                        ← Bibliotecas modulares
+│   ├── utils.sh                (cores, logging, prompt)
+│   ├── checks.sh               (detecção de distro, AUR helper)
+│   ├── packages.sh             (instalação pacman/dnf/AUR)
+│   ├── dotfiles.sh             (deploy de dotfiles Niri)
+│   ├── greeter.sh              (configuração SDDM/greetd)
+│   └── hyprland.sh             (instalação completa Hyprland)
+│
+├── packages/                   ← Listas de pacotes por distro/ambiente
+│   ├── arch-base.txt
+│   ├── arch-sddm.txt
+│   ├── arch-greetd.txt
+│   ├── arch-fonts.txt
+│   ├── arch-optional.txt
+│   ├── hyprland-arch.txt       ← Pacotes Hyprland (Arch)
+│   └── hyprland-fedora.txt     ← Pacotes Hyprland (Fedora)
+│
+├── dotfiles/                   ← Dotfiles do ambiente Niri
+│   └── niri/
+│
+├── dotfiles-hyprland/          ← Dotfiles do ambiente Hyprland
+│   ├── hyprland/
+│   ├── waybar/
+│   ├── wofi/
+│   ├── swaync/
+│   ├── eww/
+│   ├── ghostty/
+│   ├── btop/
+│   ├── fastfetch/
+│   └── wallpapers/
+│
+└── system/                     ← Arquivos de sistema (SDDM theme)
+```
+
+---
+
+## 🖥️ Hardware Testado
+
+| Componente | Especificação |
+|---|---|
+| CPU | AMD Ryzen 5 5600GT (vídeo integrado) |
+| GPU | AMD Radeon (integrada) — mesa + vulkan-radeon |
+| Distro principal | Arch Linux / CachyOS |
+
+---
+
+## 🙏 Créditos
+
+- Dotfiles Hyprland baseados em [Jules3182/dotfiles](https://github.com/Jules3182/dotfiles)
+- Estrutura modular inspirada no [donarch](https://gitlab.com/don_albert/donarch)
