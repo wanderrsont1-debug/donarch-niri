@@ -37,6 +37,10 @@ nautilus
 # ─── Ferramentas de screenshot e seletor de cor ───────────────
 hyprshot
 hyprpicker
+hyprpaper
+
+# ─── Applet de rede (bandeja do sistema) ──────────────────────
+network-manager-applet
 
 # ─── Apps GUI ────────────────────────────────────────────────
 nautilus

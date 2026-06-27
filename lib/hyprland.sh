@@ -380,6 +380,26 @@ deploy_hyprland_dotfiles() {
         log_success "Todos os dotfiles aplicados com sucesso!"
     fi
 
+    # ── Wallpapers → ~/wallpapers/ (onde hyprpaper.conf os espera) ──
+    local wallpapers_src="$HYPRLAND_DOTFILES_DIR/wallpapers"
+    local wallpapers_dst="$HOME/wallpapers"
+    if [ -d "$wallpapers_src" ]; then
+        log_info "Copiando wallpapers para $wallpapers_dst ..."
+        mkdir -p "$wallpapers_dst"
+        cp -r "$wallpapers_src"/. "$wallpapers_dst/"
+        log_success "Wallpapers copiados: $(ls "$wallpapers_dst" | tr '\n' ' ')"
+    fi
+
+    # ── Diretório de Screenshots (esperado pelo hyprshot nos binds) ──
+    mkdir -p "$HOME/Pictures/Screenshots"
+    log_success "Diretório ~/Pictures/Screenshots criado."
+
+    # ── Aviso sobre startUp.sh (script pessoal do Jules3182) ────────
+    log_warn "ATENÇÃO: start.lua tenta executar ~/Documents/scripts/startUp.sh"
+    log_warn "  Este é um script pessoal do autor original dos dotfiles."
+    log_warn "  Se não existir, o Hyprland ignora silenciosamente — sem problemas."
+    log_warn "  Crie o seu próprio em ~/Documents/scripts/startUp.sh se desejar."
+
     log_info "Para personalizar seus dotfiles, edite os arquivos em: $HYPRLAND_DOTFILES_DIR"
 }
 
