@@ -4,6 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/utils.sh"
 
+configure_display_manager() {
     local repo_dir="$1"
     
     if prompt_yes_no "Deseja configurar o SDDM e instalar o tema Silent?" "S"; then
@@ -39,6 +40,7 @@ source "$SCRIPT_DIR/utils.sh"
                 log_warn "Diretório de configurações $repo_dir/system não encontrado."
             fi
         fi
+}
 
 enable_systemd_services() {
     # NOTA: Habilitação de serviços é obrigatória — sem DM habilitado o sistema
