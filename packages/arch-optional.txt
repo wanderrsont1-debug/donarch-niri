@@ -2,7 +2,7 @@
 # Cada linha é apresentada como opção durante a instalação
 
 # === Navegadores Alternativos ===
-zen-browser-bin
+# zen-browser-bin
 
 # === Editores de Código ===
 # zed

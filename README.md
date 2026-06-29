@@ -51,7 +51,7 @@ Ao executar, o script instalará e configurará o ambiente Niri com DankMaterial
 | Fontes | `noto-fonts`, `noto-fonts-emoji`, `cantarell-fonts`, `ttf-meslo-nerd` |
 | Display Manager | `sddm` (com tema SilentSDDM) |
 | Segurança | `polkit-gnome`, `gnome-keyring`, `seahorse`, `ufw` |
-| Opcionais | `zen-browser-bin` (perguntado na instalação) |
+| Opcionais | *Nenhum no momento* |
 
 ---
 

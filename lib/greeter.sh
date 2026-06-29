@@ -404,7 +404,7 @@ verify_niri_environment() {
 
     # ── 6. Binários opcionais recomendados ────────────────────
     log_info "6/7 — Verificando binários recomendados..."
-    local optional_bins=(ghostty playerctl zen-browser fuzzel)
+    local optional_bins=(ghostty playerctl fuzzel)
     local missing_optional=()
     for bin in "${optional_bins[@]}"; do
         if command -v "$bin" &>/dev/null; then

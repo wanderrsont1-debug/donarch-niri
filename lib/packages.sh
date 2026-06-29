@@ -87,7 +87,7 @@ install_package_list() {
 # FEDORA — Repositórios COPR
 # ─────────────────────────────────────────────────────────────
 setup_fedora_repos() {
-    if prompt_yes_no "Deseja adicionar os repositórios COPR necessários (dms, ghostty e zen-browser)?" "S"; then
+    if prompt_yes_no "Deseja adicionar os repositórios COPR necessários (dms e ghostty)?" "S"; then
         log_info "Instalando dnf-plugins-core..."
         sudo dnf install -y dnf-plugins-core
 
@@ -96,9 +96,6 @@ setup_fedora_repos() {
 
         log_info "Habilitando COPR scottames/ghostty (Ghostty terminal)..."
         sudo dnf copr enable -y scottames/ghostty || log_warn "Falha ao ativar COPR do ghostty"
-
-        log_info "Habilitando COPR sneexy/zen-browser (Zen Browser)..."
-        sudo dnf copr enable -y sneexy/zen-browser || log_warn "Falha ao ativar COPR do zen-browser"
     fi
     return 0
 }
@@ -142,7 +139,6 @@ install_fedora_packages() {
             gnome-text-editor
             nautilus
             firefox
-            zen-browser
             # Audio base (vital em instalações limpas/mínimas)
             pipewire
             wireplumber
