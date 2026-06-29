@@ -107,6 +107,15 @@ check_base_packages_fedora() {
     if [ ${#missing[@]} -gt 0 ]; then
         log_warn "Pacotes base ausentes: ${missing[*]}"
         log_info "Instalando pacotes base necessários..."
+        
+        # Otimizar DNF globalmente antes da primeira instalação se não estiver otimizado
+        if ! grep -q "^max_parallel_downloads=10" /etc/dnf/dnf.conf 2>/dev/null; then
+            log_info "Otimizando dnf.conf para downloads mais rápidos..."
+            sudo sh -c 'grep -q "^max_parallel_downloads" /etc/dnf/dnf.conf && sed -i "s/^max_parallel_downloads.*/max_parallel_downloads=10/" /etc/dnf/dnf.conf || echo "max_parallel_downloads=10" >> /etc/dnf/dnf.conf'
+            sudo sh -c 'grep -q "^fastestmirror" /etc/dnf/dnf.conf && sed -i "s/^fastestmirror.*/fastestmirror=False/" /etc/dnf/dnf.conf || echo "fastestmirror=False" >> /etc/dnf/dnf.conf'
+            sudo sh -c 'grep -q "^defaultyes" /etc/dnf/dnf.conf || echo "defaultyes=True" >> /etc/dnf/dnf.conf'
+        fi
+
         sudo dnf install -y "${missing[@]}"
         return $?
     fi

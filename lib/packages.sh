@@ -182,11 +182,7 @@ install_fedora_packages() {
             qt6-qt5compat
         )
 
-        sudo dnf install -y --skip-broken \
-            --setopt=fastestmirror=True \
-            --setopt=max_parallel_downloads=10 \
-            --setopt=timeout=10 \
-            "${packages[@]}"
+        sudo dnf install -y --skip-broken "${packages[@]}"
     fi
 
     if prompt_yes_no "Deseja instalar a fonte Meslo Nerd Font para evitar ícones quebrados?" "S"; then
